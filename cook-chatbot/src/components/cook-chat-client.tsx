@@ -100,7 +100,7 @@ export function CookChatClient() {
 
         // 为不同的 API 提供商使用不同的配置
         const streamConfig = {
-          model: openai(config.model),
+          model: openai.chat(config.model),
           system: COOKING_SYSTEM_PROMPT,
           messages: [...currentMessages, userMessage].map(msg => ({
             role: msg.role,

@@ -98,7 +98,7 @@ export function NonStreamingChat() {
         })
 
         const result = await generateText({
-          model: openai(config.model),
+          model: openai.chat(config.model),
           system: COOKING_SYSTEM_PROMPT,
           messages: [...currentMessages, userMessage].map(msg => ({
             role: msg.role,
