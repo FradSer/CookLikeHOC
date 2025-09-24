@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fradser.github.io/CookLikeHOC/sitemap.xml

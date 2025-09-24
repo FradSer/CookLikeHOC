@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // 性能优化
+  compress: true,
 };
 
 export default nextConfig;

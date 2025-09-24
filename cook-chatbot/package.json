@@ -2,11 +2,14 @@
   "name": "cook-chatbot",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://fradser.github.io/CookLikeHOC",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "predeploy": "pnpm build",
+    "deploy": "gh-pages -d out --nojekyll"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.34",
@@ -46,6 +49,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
+    "gh-pages": "^6.3.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5"
