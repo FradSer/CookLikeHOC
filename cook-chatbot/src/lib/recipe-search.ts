@@ -111,6 +111,38 @@ export function getRecipesByCategory(category: string): Recipe[] {
   return recipes.filter(recipe => recipe.category === category)
 }
 
+// 根据路径获取菜谱
+export function getRecipeByPath(recipePath: string): Recipe | null {
+  const recipes = recipeData.recipes as Recipe[]
+
+  // 解析路径，例如 "/汤/老鸡汤.md" 或 "/配料/炒菜基料.md"
+  const pathMatch = recipePath.match(/^\/([^\/]+)\/(.+)\.md$/)
+  if (!pathMatch) return null
+
+  const [, category, fileName] = pathMatch
+
+  // 根据中文分类名查找菜谱
+  const categoryMap: { [key: string]: string } = {
+    '汤': '汤',
+    '配料': '配料',
+    '炒菜': '炒菜',
+    '蒸菜': '蒸菜',
+    '烫菜': '烫菜',
+    '砂锅菜': '砂锅菜',
+    '炖菜': '炖菜'
+  }
+
+  const targetCategory = categoryMap[category] || category
+
+  // 查找匹配的菜谱
+  const recipe = recipes.find(r =>
+    r.category === targetCategory &&
+    (r.name === fileName || r.name.includes(fileName) || fileName.includes(r.name))
+  )
+
+  return recipe || null
+}
+
 // 格式化菜谱为文本
 export function formatRecipeForAI(recipe: Recipe): string {
   return `【${recipe.name}】(${recipe.category})

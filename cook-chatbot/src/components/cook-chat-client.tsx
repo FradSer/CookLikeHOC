@@ -11,6 +11,7 @@ import { ConfigDialog } from './config-dialog'
 import { needsCorsProxy, getCorsProxyUrl, getApiHeaders, formatApiRequest, getEndpointUrl } from '@/lib/api-proxy'
 import { Streamdown } from 'streamdown'
 import { ENHANCED_COOKING_SYSTEM_PROMPT } from '@/data/cooking-prompt'
+import { RecipeLinkParser } from '@/components/ui/recipe-link-parser'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -173,7 +174,7 @@ export function CookChatClient() {
     return (
       <div className="max-w-2xl mx-auto p-4 flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="text-4xl mb-4">🍳</div>
+          <div className="text-4xl mb-4">🐔</div>
           <p>加载中...</p>
         </div>
       </div>
@@ -184,7 +185,7 @@ export function CookChatClient() {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">🍳 做菜问答助手</h1>
+          <h1 className="text-3xl font-bold mb-2">🐔 HOC 做菜问答助手</h1>
           <p className="text-muted-foreground">
             专业的烹饪助手，帮你解决所有做菜相关的问题
           </p>
@@ -199,7 +200,7 @@ export function CookChatClient() {
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">🍳 做菜问答助手</h1>
+            <h1 className="text-2xl font-bold">🐔 HOC 做菜问答助手</h1>
             <p className="text-sm text-muted-foreground">
               专业的烹饪助手，随时为你解答烹饪问题
             </p>
@@ -239,13 +240,17 @@ export function CookChatClient() {
                   : 'bg-gray-50 mr-auto max-w-2xl'
               }`}>
                 <div className="text-sm font-medium text-gray-600 mb-1">
-                  {message.role === 'user' ? '用户' : '🍳 厨师助手'}
+                  {message.role === 'user' ? '用户' : '🐔 HOC 助手'}
                 </div>
                 <div className="text-gray-800">
                   {message.role === 'user' ? (
                     <div className="whitespace-pre-wrap">{message.content}</div>
                   ) : (
-                    <Streamdown>{message.content || '正在思考中...'}</Streamdown>
+                    <div className="whitespace-pre-wrap">
+                      <RecipeLinkParser>
+                        {message.content || '正在思考中...'}
+                      </RecipeLinkParser>
+                    </div>
                   )}
                 </div>
               </div>
