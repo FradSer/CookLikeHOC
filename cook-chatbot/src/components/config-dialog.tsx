@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useChatConfig, type ChatConfig } from '@/hooks/use-chat-config'
 import { needsCorsProxy } from '@/lib/api-proxy'
 
@@ -58,6 +58,9 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>API 配置</DialogTitle>
+            <DialogDescription>
+              配置您的 AI API 接口信息，支持 OpenAI、Groq、DeepSeek 等多种服务商。
+            </DialogDescription>
           </DialogHeader>
           <ConfigForm
             tempConfig={tempConfig}
@@ -76,6 +79,9 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>API 配置</DialogTitle>
+          <DialogDescription>
+            配置您的 AI API 接口信息，支持 OpenAI、Groq、DeepSeek 等多种服务商。
+          </DialogDescription>
         </DialogHeader>
         <ConfigForm
           tempConfig={tempConfig}
