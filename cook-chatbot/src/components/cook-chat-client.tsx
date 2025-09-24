@@ -52,73 +52,25 @@ export function CookChatClient() {
       content: input.trim()
     }
 
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-
     const assistantMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
       content: ''
     }
 
-    setMessages(prev => [...prev, assistantMessage])
+    // 保存当前消息历史
+    const currentMessages = messages
+
+    // 添加用户消息和助手占位消息
+    setMessages(prev => [...prev, userMessage, assistantMessage])
+    setInput('')
+    setIsLoading(true)
 
     try {
       // 检查是否需要 CORS 代理
       if (needsCorsProxy(config.baseURL)) {
-        await handleCorsRequest(userMessage, assistantMessage)
-      } else {
-        await handleNormalRequest(userMessage, assistantMessage)
-      }
-    } catch (error) {
-      console.error('Chat error:', error)
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '抱歉，遇到了一些问题。请检查您的 API 配置或稍后重试。错误信息：' + (error as Error).message
-      }
-      setMessages(prev => prev.map(msg =>
-        msg.id === assistantMessage.id ? errorMessage : msg
-      ))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [input, config, messages, isLoading])
-
-  // 处理普通请求（支持 CORS 的 API）
-  const handleNormalRequest = async (userMessage: ChatMessage, assistantMessage: ChatMessage) => {
-    const openai = createOpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-    })
-
-    const result = await streamText({
-      model: openai(config.model),
-      system: COOKING_SYSTEM_PROMPT,
-      messages: [...messages, userMessage].map(msg => ({
-        role: msg.role,
-        content: msg.content
-      })),
-      maxTokens: 2000,
-      temperature: 0.7,
-    })
-
-    let fullContent = ''
-    for await (const textPart of result.textStream) {
-      fullContent += textPart
-      setMessages(prev => prev.map(msg =>
-        msg.id === assistantMessage.id
-          ? { ...msg, content: fullContent }
-          : msg
-      ))
-    }
-  }
-
-  // 处理需要 CORS 代理的请求
-  const handleCorsRequest = async (userMessage: ChatMessage, assistantMessage: ChatMessage) => {
-    // 对于 CORS 问题，使用简单的错误消息并提供解决建议
-    const errorContent = `由于浏览器的 CORS 安全限制，无法直接访问此 API 端点。
+        // 对于 CORS 问题，直接显示错误消息
+        const errorContent = `由于浏览器的 CORS 安全限制，无法直接访问此 API 端点。
 
 解决方案：
 1. 使用支持 CORS 的 API（如 OpenAI、Groq、DeepSeek）
@@ -130,12 +82,52 @@ export function CookChatClient() {
 • Groq API (api.groq.com)
 • DeepSeek API (api.deepseek.com)`
 
-    setMessages(prev => prev.map(msg =>
-      msg.id === assistantMessage.id
-        ? { ...msg, content: errorContent }
-        : msg
-    ))
-  }
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessage.id
+            ? { ...msg, content: errorContent }
+            : msg
+        ))
+      } else {
+        // 处理正常的 API 请求
+        const openai = createOpenAI({
+          apiKey: config.apiKey,
+          baseURL: config.baseURL,
+        })
+
+        const result = await streamText({
+          model: openai(config.model),
+          system: COOKING_SYSTEM_PROMPT,
+          messages: [...currentMessages, userMessage].map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          maxTokens: 2000,
+          temperature: 0.7,
+        })
+
+        let fullContent = ''
+        for await (const textPart of result.textStream) {
+          fullContent += textPart
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessage.id
+              ? { ...msg, content: fullContent }
+              : msg
+          ))
+        }
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      const errorContent = '抱歉，遇到了一些问题。请检查您的 API 配置或稍后重试。错误信息：' + (error as Error).message
+
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessage.id
+          ? { ...msg, content: errorContent }
+          : msg
+      ))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [input, config, isLoading, messages])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
@@ -210,7 +202,18 @@ export function CookChatClient() {
         ) : (
           <div className="h-full overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
-              <Message key={message.id} message={message} />
+              <div key={message.id} className={`p-3 rounded-lg ${
+                message.role === 'user'
+                  ? 'bg-blue-50 ml-auto max-w-sm'
+                  : 'bg-gray-50 mr-auto max-w-2xl'
+              }`}>
+                <div className="text-sm font-medium text-gray-600 mb-1">
+                  {message.role === 'user' ? '用户' : '🍳 厨师助手'}
+                </div>
+                <div className="text-gray-800 whitespace-pre-wrap">
+                  {message.content || '正在思考中...'}
+                </div>
+              </div>
             ))}
             {isLoading && (
               <div className="flex items-center gap-2 text-muted-foreground">
