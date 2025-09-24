@@ -90,9 +90,12 @@ export function CookChatClient() {
         ))
       } else {
         // 处理正常的 API 请求
+        // 确保使用正确的 chat completions endpoint
+        const baseURL = config.baseURL.endsWith('/') ? config.baseURL.slice(0, -1) : config.baseURL
         const openai = createOpenAI({
           apiKey: config.apiKey,
-          baseURL: config.baseURL,
+          baseURL: baseURL,
+          compatibility: 'compatible',
         })
 
         // 为不同的 API 提供商使用不同的配置

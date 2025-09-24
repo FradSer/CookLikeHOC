@@ -89,9 +89,12 @@ export function NonStreamingChat() {
         ))
       } else {
         // 处理正常的 API 请求 - 使用非流式生成
+        // 确保使用正确的 chat completions endpoint
+        const baseURL = config.baseURL.endsWith('/') ? config.baseURL.slice(0, -1) : config.baseURL
         const openai = createOpenAI({
           apiKey: config.apiKey,
-          baseURL: config.baseURL,
+          baseURL: baseURL,
+          compatibility: 'compatible',
         })
 
         const result = await generateText({
