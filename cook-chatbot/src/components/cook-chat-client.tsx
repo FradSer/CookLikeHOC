@@ -8,6 +8,7 @@ import { Message } from '@/components/ai-elements/message'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
+import { needsCorsProxy, getCorsProxyUrl, getApiHeaders, formatApiRequest, getEndpointUrl } from '@/lib/api-proxy'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -55,52 +56,86 @@ export function CookChatClient() {
     setInput('')
     setIsLoading(true)
 
+    const assistantMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: ''
+    }
+
+    setMessages(prev => [...prev, assistantMessage])
+
     try {
-      const openai = createOpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseURL,
-      })
-
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: ''
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
-
-      const result = await streamText({
-        model: openai(config.model),
-        system: COOKING_SYSTEM_PROMPT,
-        messages: [...messages, userMessage].map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        maxTokens: 2000,
-        temperature: 0.7,
-      })
-
-      let fullContent = ''
-      for await (const textPart of result.textStream) {
-        fullContent += textPart
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessage.id
-            ? { ...msg, content: fullContent }
-            : msg
-        ))
+      // 检查是否需要 CORS 代理
+      if (needsCorsProxy(config.baseURL)) {
+        await handleCorsRequest(userMessage, assistantMessage)
+      } else {
+        await handleNormalRequest(userMessage, assistantMessage)
       }
     } catch (error) {
       console.error('Chat error:', error)
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '抱歉，遇到了一些问题。请检查您的 API 配置或稍后重试。'
+        content: '抱歉，遇到了一些问题。请检查您的 API 配置或稍后重试。错误信息：' + (error as Error).message
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessage.id ? errorMessage : msg
+      ))
     } finally {
       setIsLoading(false)
     }
   }, [input, config, messages, isLoading])
+
+  // 处理普通请求（支持 CORS 的 API）
+  const handleNormalRequest = async (userMessage: ChatMessage, assistantMessage: ChatMessage) => {
+    const openai = createOpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseURL,
+    })
+
+    const result = await streamText({
+      model: openai(config.model),
+      system: COOKING_SYSTEM_PROMPT,
+      messages: [...messages, userMessage].map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      maxTokens: 2000,
+      temperature: 0.7,
+    })
+
+    let fullContent = ''
+    for await (const textPart of result.textStream) {
+      fullContent += textPart
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessage.id
+          ? { ...msg, content: fullContent }
+          : msg
+      ))
+    }
+  }
+
+  // 处理需要 CORS 代理的请求
+  const handleCorsRequest = async (userMessage: ChatMessage, assistantMessage: ChatMessage) => {
+    // 对于 CORS 问题，使用简单的错误消息并提供解决建议
+    const errorContent = `由于浏览器的 CORS 安全限制，无法直接访问此 API 端点。
+
+解决方案：
+1. 使用支持 CORS 的 API（如 OpenAI、Groq、DeepSeek）
+2. 在本地环境中通过代理服务器访问
+3. 使用浏览器插件禁用 CORS 检查（不推荐）
+
+推荐使用以下支持 CORS 的替代方案：
+• OpenAI API (api.openai.com)
+• Groq API (api.groq.com)
+• DeepSeek API (api.deepseek.com)`
+
+    setMessages(prev => prev.map(msg =>
+      msg.id === assistantMessage.id
+        ? { ...msg, content: errorContent }
+        : msg
+    ))
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)

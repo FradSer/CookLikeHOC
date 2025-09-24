@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useChatConfig, type ChatConfig } from '@/hooks/use-chat-config'
+import { needsCorsProxy } from '@/lib/api-proxy'
 
 interface ConfigDialogProps {
   onConfigSaved?: () => void
@@ -34,9 +35,11 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
   }
 
   const commonConfigs = [
-    { name: 'OpenAI', baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
-    { name: 'Groq', baseURL: 'https://api.groq.com/openai/v1', model: 'llama-3.1-8b-instant' },
-    { name: 'Ollama', baseURL: 'http://localhost:11434/v1', model: 'llama3.2' },
+    { name: 'OpenAI', baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini', cors: true },
+    { name: 'Groq', baseURL: 'https://api.groq.com/openai/v1', model: 'llama-3.1-8b-instant', cors: true },
+    { name: '豆包', baseURL: 'https://ark.cn-beijing.volces.com/api/v3', model: 'ep-20241224141755-zxxxc', cors: false },
+    { name: 'DeepSeek', baseURL: 'https://api.deepseek.com', model: 'deepseek-chat', cors: true },
+    { name: 'Ollama', baseURL: 'http://localhost:11434/v1', model: 'llama3.2', cors: true },
   ]
 
   if (!showConfig && isConfigured) {
@@ -62,9 +65,12 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
             key={preset.name}
             variant="outline"
             size="sm"
+            className={`${!preset.cors ? 'border-orange-300 text-orange-600' : ''}`}
             onClick={() => setTempConfig(prev => ({ ...prev, baseURL: preset.baseURL, model: preset.model }))}
+            title={!preset.cors ? '此 API 可能存在 CORS 限制' : ''}
           >
             {preset.name}
+            {!preset.cors && <span className="ml-1 text-orange-500">⚠</span>}
           </Button>
         ))}
       </div>
@@ -98,6 +104,20 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
           />
         </div>
       </div>
+
+      {needsCorsProxy(tempConfig.baseURL) && (
+        <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+          <div className="flex items-start gap-2">
+            <span className="text-orange-500">⚠</span>
+            <div className="text-sm text-orange-800">
+              <div className="font-medium">CORS 限制警告</div>
+              <div className="mt-1">
+                此 API 端点可能存在跨域访问限制。如果遇到连接问题，建议使用支持 CORS 的替代 API（如 OpenAI、Groq、DeepSeek）。
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <Button onClick={handleSave} disabled={!tempConfig.apiKey}>
