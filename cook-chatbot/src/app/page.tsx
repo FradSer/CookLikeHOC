@@ -1,5 +1,5 @@
-import { CookChatClient } from '@/components/cook-chat-client'
+import { NonStreamingChat } from '@/components/non-streaming-chat'
 
 export default function Home() {
-  return <CookChatClient />
+  return <NonStreamingChat />
 }

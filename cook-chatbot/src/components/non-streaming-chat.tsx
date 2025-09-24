@@ -2,13 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { createOpenAI } from '@ai-sdk/openai'
-import { streamText } from 'ai'
+import { generateText } from 'ai'
 import { useChatConfig } from '@/hooks/use-chat-config'
-import { Message } from '@/components/ai-elements/message'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
-import { needsCorsProxy, getCorsProxyUrl, getApiHeaders, formatApiRequest, getEndpointUrl } from '@/lib/api-proxy'
+import { needsCorsProxy } from '@/lib/api-proxy'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -36,7 +35,7 @@ interface ChatMessage {
   content: string
 }
 
-export function CookChatClient() {
+export function NonStreamingChat() {
   const { config, isConfigured, isClient } = useChatConfig()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -88,14 +87,13 @@ export function CookChatClient() {
             : msg
         ))
       } else {
-        // 处理正常的 API 请求
+        // 处理正常的 API 请求 - 使用非流式生成
         const openai = createOpenAI({
           apiKey: config.apiKey,
           baseURL: config.baseURL,
         })
 
-        // 为不同的 API 提供商使用不同的配置
-        const streamConfig = {
+        const result = await generateText({
           model: openai(config.model),
           system: COOKING_SYSTEM_PROMPT,
           messages: [...currentMessages, userMessage].map(msg => ({
@@ -103,43 +101,14 @@ export function CookChatClient() {
             content: msg.content
           })),
           maxTokens: 2000,
-          temperature: 0.7,
-        }
+          temperature: config.baseURL.includes('groq.com') ? 0.5 : 0.7,
+        })
 
-        // 对于 Groq，添加额外的配置
-        if (config.baseURL.includes('groq.com')) {
-          streamConfig.temperature = 0.5 // Groq 偏好较低的温度
-        }
-
-        const result = await streamText(streamConfig)
-
-        let fullContent = ''
-        try {
-          for await (const textPart of result.textStream) {
-            if (textPart && typeof textPart === 'string') {
-              fullContent += textPart
-              setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessage.id
-                  ? { ...msg, content: fullContent }
-                  : msg
-              ))
-            }
-          }
-        } catch (streamError) {
-          console.error('Stream processing error:', streamError)
-          // 尝试使用完整文本而不是流
-          try {
-            const fullText = await result.text
-            setMessages(prev => prev.map(msg =>
-              msg.id === assistantMessage.id
-                ? { ...msg, content: fullText }
-                : msg
-            ))
-          } catch (textError) {
-            console.error('Text fallback error:', textError)
-            throw streamError
-          }
-        }
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessage.id
+            ? { ...msg, content: result.text }
+            : msg
+        ))
       }
     } catch (error) {
       console.error('Chat error:', error)
@@ -196,7 +165,7 @@ export function CookChatClient() {
           <div>
             <h1 className="text-2xl font-bold">🍳 做菜问答助手</h1>
             <p className="text-sm text-muted-foreground">
-              专业的烹饪助手，随时为你解答烹饪问题
+              专业的烹饪助手，随时为你解答烹饪问题（非流式版本）
             </p>
           </div>
           <ConfigDialog />
