@@ -5,8 +5,8 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { streamText } from 'ai'
 import { useChatConfig } from '@/hooks/use-chat-config'
 import { Message } from '@/components/ai-elements/message'
-import { PromptInput } from '@/components/ai-elements/prompt-input'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
@@ -36,7 +36,7 @@ interface ChatMessage {
 }
 
 export function CookChatClient() {
-  const { config, isConfigured } = useChatConfig()
+  const { config, isConfigured, isClient } = useChatConfig()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -110,6 +110,18 @@ export function CookChatClient() {
     setInput(suggestion)
   }
 
+  // 防止 SSR 问题
+  if (!isClient) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🍳</div>
+          <p>加载中...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!isConfigured) {
     return (
       <div className="max-w-2xl mx-auto p-4">
@@ -177,12 +189,19 @@ export function CookChatClient() {
 
       <div className="p-4 border-t">
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <PromptInput
+          <Textarea
             value={input}
             onChange={handleInputChange}
             placeholder="问我任何烹饪问题..."
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 resize-none"
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit(e)
+              }
+            }}
           />
           <Button type="submit" disabled={isLoading || !input.trim()}>
             {isLoading ? '思考中...' : '发送'}

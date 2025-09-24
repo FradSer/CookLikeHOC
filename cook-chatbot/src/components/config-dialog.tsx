@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,18 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
   const { config, setConfig, isConfigured } = useChatConfig()
   const [tempConfig, setTempConfig] = useState<ChatConfig>(config)
   const [showConfig, setShowConfig] = useState(!isConfigured)
+
+  // 同步配置变化
+  useEffect(() => {
+    setTempConfig(config)
+  }, [config])
+
+  // 当配置状态改变时更新显示状态
+  useEffect(() => {
+    if (!isConfigured) {
+      setShowConfig(true)
+    }
+  }, [isConfigured])
 
   const handleSave = () => {
     setConfig(tempConfig)
