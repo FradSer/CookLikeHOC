@@ -134,10 +134,15 @@ cook-chatbot/
 
 ### 自动部署
 
-1. Fork 或上传代码到 GitHub 仓库
-2. 在仓库设置中启用 GitHub Pages
-3. 选择 "GitHub Actions" 作为部署源
-4. 推送代码到 main 分支，会自动触发部署
+1. ✅ 代码已推送到 CookLikeHOC 仓库
+2. ✅ GitHub Pages 已启用
+3. ✅ GitHub Actions 工作流已配置
+4. ✅ 推送到 main 分支会自动触发部署
+
+### 访问地址
+
+部署完成后可通过以下地址访问：
+- **GitHub Pages**: https://fradser.github.io/CookLikeHOC/
 
 ### 手动部署
 
