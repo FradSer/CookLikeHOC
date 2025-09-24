@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useChatConfig, type ChatConfig } from '@/hooks/use-chat-config'
 import { needsCorsProxy } from '@/lib/api-proxy'
 
@@ -14,7 +15,7 @@ interface ConfigDialogProps {
 export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
   const { config, setConfig, isConfigured } = useChatConfig()
   const [tempConfig, setTempConfig] = useState<ChatConfig>(config)
-  const [showConfig, setShowConfig] = useState(!isConfigured)
+  const [open, setOpen] = useState(!isConfigured)
 
   // 同步配置变化
   useEffect(() => {
@@ -24,13 +25,13 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
   // 当配置状态改变时更新显示状态
   useEffect(() => {
     if (!isConfigured) {
-      setShowConfig(true)
+      setOpen(true)
     }
   }, [isConfigured])
 
   const handleSave = () => {
     setConfig(tempConfig)
-    setShowConfig(false)
+    setOpen(false)
     onConfigSaved?.()
   }
 
@@ -41,23 +42,64 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
     { name: 'Ollama', baseURL: 'http://localhost:11434/v1', model: 'llama3.2', cors: true },
   ]
 
-  if (!showConfig && isConfigured) {
+  if (isConfigured) {
     return (
-      <div className="flex items-center gap-2 mb-4">
-        <Badge variant="secondary">
-          {commonConfigs.find(c => c.baseURL === config.baseURL)?.name || 'Custom'}
-        </Badge>
-        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
-          配置 API
-        </Button>
-      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <div className="flex items-center gap-2 mb-4">
+            <Badge variant="secondary">
+              {commonConfigs.find(c => c.baseURL === config.baseURL)?.name || 'Custom'}
+            </Badge>
+            <Button variant="outline" size="sm">
+              配置 API
+            </Button>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>API 配置</DialogTitle>
+          </DialogHeader>
+          <ConfigForm
+            tempConfig={tempConfig}
+            setTempConfig={setTempConfig}
+            onSave={handleSave}
+            onCancel={() => setOpen(false)}
+            commonConfigs={commonConfigs}
+          />
+        </DialogContent>
+      </Dialog>
     )
   }
 
   return (
-    <div className="border rounded-lg p-4 mb-4 space-y-4">
-      <h3 className="text-lg font-semibold">API 配置</h3>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>API 配置</DialogTitle>
+        </DialogHeader>
+        <ConfigForm
+          tempConfig={tempConfig}
+          setTempConfig={setTempConfig}
+          onSave={handleSave}
+          onCancel={() => setOpen(false)}
+          commonConfigs={commonConfigs}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
 
+interface ConfigFormProps {
+  tempConfig: ChatConfig
+  setTempConfig: React.Dispatch<React.SetStateAction<ChatConfig>>
+  onSave: () => void
+  onCancel: () => void
+  commonConfigs: Array<{ name: string; baseURL: string; model: string; cors: boolean }>
+}
+
+function ConfigForm({ tempConfig, setTempConfig, onSave, onCancel, commonConfigs }: ConfigFormProps) {
+  return (
+    <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {commonConfigs.map((preset) => (
           <Button
@@ -118,15 +160,13 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button onClick={handleSave} disabled={!tempConfig.apiKey}>
+      <div className="flex gap-2 justify-end">
+        <Button variant="outline" onClick={onCancel}>
+          取消
+        </Button>
+        <Button onClick={onSave} disabled={!tempConfig.apiKey}>
           保存配置
         </Button>
-        {isConfigured && (
-          <Button variant="outline" onClick={() => setShowConfig(false)}>
-            取消
-          </Button>
-        )}
       </div>
     </div>
   )

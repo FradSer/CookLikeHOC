@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
 import { needsCorsProxy } from '@/lib/api-proxy'
+import { Streamdown } from 'streamdown'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -205,8 +206,12 @@ export function NonStreamingChat() {
                 <div className="text-sm font-medium text-gray-600 mb-1">
                   {message.role === 'user' ? '用户' : '🍳 厨师助手'}
                 </div>
-                <div className="text-gray-800 whitespace-pre-wrap">
-                  {message.content || '正在思考中...'}
+                <div className="text-gray-800">
+                  {message.role === 'user' ? (
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                  ) : (
+                    <Streamdown>{message.content || '正在思考中...'}</Streamdown>
+                  )}
                 </div>
               </div>
             ))}
