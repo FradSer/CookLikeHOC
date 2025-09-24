@@ -154,8 +154,14 @@ function selectExemplaryRecipes(recipes) {
 
 function generateSystemPrompt(exemplaryRecipes) {
   const recipeExamples = exemplaryRecipes.map(recipe => {
+    // 处理原料中的链接格式，避免被AI过滤器屏蔽
+    const processedIngredients = recipe.ingredients.map(ingredient => {
+      // 将 [文本](/路径/文件.md) 格式替换为更安全的格式
+      return ingredient.replace(/\[([^\]]+)\]\(([^)]+\.md)\)/g, '「$1」(参见相关菜谱)')
+    })
+
     return `【${recipe.name}】(${recipe.category})
-原料：${recipe.ingredients.join('、')}
+原料：${processedIngredients.join('、')}
 步骤：${recipe.steps.join(' ')}`
   }).join('\n\n')
 
