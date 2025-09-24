@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
 import { needsCorsProxy } from '@/lib/api-proxy'
 import { Streamdown } from 'streamdown'
+import { ENHANCED_COOKING_SYSTEM_PROMPT } from '@/data/cooking-prompt'
+import { searchRecipes, formatRecipeForAI, recommendByIngredients } from '@/lib/recipe-search'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -97,9 +99,17 @@ export function NonStreamingChat() {
           compatibility: 'compatible',
         })
 
+        // 智能检索相关菜谱
+        const relevantRecipes = searchRecipes(userMessage.content, 3)
+        const contextualInfo = relevantRecipes.length > 0
+          ? `\n\n相关菜谱参考：\n${relevantRecipes.map(formatRecipeForAI).join('\n\n')}`
+          : ''
+
+        const enhancedSystemPrompt = ENHANCED_COOKING_SYSTEM_PROMPT + contextualInfo
+
         const result = await generateText({
           model: openai.chat(config.model),
-          system: COOKING_SYSTEM_PROMPT,
+          system: enhancedSystemPrompt,
           messages: [...currentMessages, userMessage].map(msg => ({
             role: msg.role,
             content: msg.content
