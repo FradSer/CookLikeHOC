@@ -37,7 +37,6 @@ export function ConfigDialog({ onConfigSaved }: ConfigDialogProps) {
   const commonConfigs = [
     { name: 'OpenAI', baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini', cors: true },
     { name: 'Groq', baseURL: 'https://api.groq.com/openai/v1', model: 'llama-3.1-8b-instant', cors: true },
-    { name: '豆包', baseURL: 'https://ark.cn-beijing.volces.com/api/v3', model: 'ep-20241224141755-zxxxc', cors: false },
     { name: 'DeepSeek', baseURL: 'https://api.deepseek.com', model: 'deepseek-chat', cors: true },
     { name: 'Ollama', baseURL: 'http://localhost:11434/v1', model: 'llama3.2', cors: true },
   ]
