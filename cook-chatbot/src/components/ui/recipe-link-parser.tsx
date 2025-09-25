@@ -3,7 +3,7 @@
 import { RecipeTooltip } from './recipe-tooltip'
 
 interface RecipeLinkParserProps {
-  children: string
+  children: React.ReactNode
 }
 
 export function RecipeLinkParser({ children: text }: RecipeLinkParserProps) {
