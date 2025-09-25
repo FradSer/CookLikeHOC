@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { useChatConfig } from '@/hooks/use-chat-config'
@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
 import { needsCorsProxy } from '@/lib/api-proxy'
-import { Streamdown } from 'streamdown'
+import ReactMarkdown from 'react-markdown'
 import { ENHANCED_COOKING_SYSTEM_PROMPT } from '@/data/cooking-prompt'
 import { searchRecipes, formatRecipeForAI, recommendByIngredients } from '@/lib/recipe-search'
-import { RecipeLinkParser } from '@/components/ui/recipe-link-parser'
+import { RecipeModal } from '@/components/ui/recipe-modal'
+import { IngredientModal } from '@/components/ui/ingredient-modal'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -207,6 +208,30 @@ export function NonStreamingChat() {
                   食材搭配
                 </Button>
               </div>
+
+              {/* Markdown Test Section */}
+              <div className="mt-8 p-4 bg-white border rounded-lg max-w-md mx-auto">
+                <h3 className="text-sm font-medium mb-2 text-gray-600">Markdown 渲染测试:</h3>
+                <div className="prose max-w-none text-left">
+                  <ReactMarkdown>
+{`## 测试标题
+
+这是一段**粗体文字**和*斜体文字*。
+
+### 子标题
+
+- 列表项目1
+- 列表项目2
+- 列表项目3
+
+1. 数字列表1
+2. 数字列表2
+3. 数字列表3
+
+这里是一个链接：[百度](https://baidu.com)`}
+                  </ReactMarkdown>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -224,10 +249,78 @@ export function NonStreamingChat() {
                   {message.role === 'user' ? (
                     <div className="whitespace-pre-wrap">{message.content}</div>
                   ) : (
-                    <div className="whitespace-pre-wrap">
-                      <RecipeLinkParser>
-                        {message.content || '正在思考中...'}
-                      </RecipeLinkParser>
+                    <div className="prose max-w-none">
+                      {(() => {
+                        const content = message.content || '正在思考中...'
+
+                        // 手动处理 markdown 链接，避免自动术语识别
+                        const linkRegex = /\[([^\]]+)\]\((\/[^)]+\.md)\)/g
+                        const parts: (string | React.ReactElement)[] = []
+                        let lastIndex = 0
+                        let match: RegExpExecArray | null
+
+                        while ((match = linkRegex.exec(content)) !== null) {
+                          const [fullMatch, linkText, href] = match
+                          const matchIndex = match.index
+
+                          // 添加链接前的文本
+                          if (matchIndex > lastIndex) {
+                            const textBefore = content.substring(lastIndex, matchIndex)
+                            parts.push(...textBefore.split('\n').map((line, i) =>
+                              i === 0 ? line : [<br key={`br-${lastIndex}-${i}`} />, line]
+                            ).flat().filter(part => part !== ''))
+                          }
+
+                          // 添加 modal 链接
+                          if (href.includes('/配料/')) {
+                            parts.push(
+                              <IngredientModal key={`ingredient-${matchIndex}`} ingredientPath={href}>
+                                <span className="text-blue-600 hover:text-blue-800 underline cursor-pointer">{linkText}</span>
+                              </IngredientModal>
+                            )
+                          } else {
+                            parts.push(
+                              <RecipeModal key={`recipe-${matchIndex}`} recipePath={href}>
+                                <span className="text-blue-600 hover:text-blue-800 underline cursor-pointer">{linkText}</span>
+                              </RecipeModal>
+                            )
+                          }
+
+                          lastIndex = matchIndex + fullMatch.length
+                        }
+
+                        // 添加剩余的文本
+                        if (lastIndex < content.length) {
+                          const remainingText = content.substring(lastIndex)
+                          parts.push(...remainingText.split('\n').map((line, i) =>
+                            i === 0 ? line : [<br key={`br-remaining-${i}`} />, line]
+                          ).flat().filter(part => part !== ''))
+                        }
+
+                        // 如果没有找到链接，就直接显示原文本
+                        if (parts.length === 0) {
+                          return (
+                            <div className="whitespace-pre-wrap">
+                              {content.split('\n').map((line, i) => (
+                                <React.Fragment key={i}>
+                                  {i > 0 && <br />}
+                                  {line}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div>
+                            {parts.map((part, index) => (
+                              <React.Fragment key={index}>
+                                {typeof part === 'string' ? part : part}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
