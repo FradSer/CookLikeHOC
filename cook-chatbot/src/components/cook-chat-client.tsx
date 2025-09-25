@@ -9,9 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ConfigDialog } from './config-dialog'
 import { needsCorsProxy, getCorsProxyUrl, getApiHeaders, formatApiRequest, getEndpointUrl } from '@/lib/api-proxy'
-import { Streamdown } from 'streamdown'
+import ReactMarkdown from 'react-markdown'
 import { ENHANCED_COOKING_SYSTEM_PROMPT } from '@/data/cooking-prompt'
-import { RecipeLinkParser } from '@/components/ui/recipe-link-parser'
+import { RecipeTooltip } from '@/components/ui/recipe-tooltip'
 
 const COOKING_SYSTEM_PROMPT = `你是一位专业的烹饪助手和美食专家。你的职责是帮助用户解决所有与烹饪相关的问题，包括但不限于：
 
@@ -232,33 +232,61 @@ export function CookChatClient() {
             </div>
           </div>
         ) : (
-          <div className="h-full overflow-y-auto p-4 space-y-4">
+          <div className="h-full overflow-y-auto p-6 space-y-6">
             {messages.map((message) => (
-              <div key={message.id} className={`p-3 rounded-lg ${
+              <div key={message.id} className={`p-4 rounded-2xl shadow-sm border ${
                 message.role === 'user'
-                  ? 'bg-blue-50 ml-auto max-w-sm'
-                  : 'bg-gray-50 mr-auto max-w-2xl'
+                  ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 ml-auto max-w-md'
+                  : 'bg-gradient-to-br from-gray-50 to-white border-gray-200 mr-auto max-w-3xl'
               }`}>
-                <div className="text-sm font-medium text-gray-600 mb-1">
-                  {message.role === 'user' ? '用户' : '🐔 HOC 助手'}
-                </div>
-                <div className="text-gray-800">
+                <div className="text-xs font-semibold mb-3 flex items-center gap-2">
                   {message.role === 'user' ? (
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-blue-700">用户</span>
+                    </>
                   ) : (
-                    <div className="whitespace-pre-wrap">
-                      <RecipeLinkParser>
+                    <>
+                      <span className="text-xl">🐔</span>
+                      <span className="text-orange-700">HOC 助手</span>
+                    </>
+                  )}
+                </div>
+                <div className="text-gray-800 leading-relaxed">
+                  {message.role === 'user' ? (
+                    <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                  ) : (
+                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-headings:font-semibold prose-p:text-gray-800 prose-li:text-gray-800">
+                      <ReactMarkdown
+                        components={{
+                          a: ({ node, href, children, ...props }) => {
+                            // Check if this is a recipe link pattern
+                            if (href && href.match(/^\/.*\.md$/)) {
+                              return (
+                                <RecipeTooltip recipePath={href}>
+                                  {children}
+                                </RecipeTooltip>
+                              )
+                            }
+                            return <a href={href} {...props}>{children}</a>
+                          }
+                        }}
+                      >
                         {message.content || '正在思考中...'}
-                      </RecipeLinkParser>
+                      </ReactMarkdown>
                     </div>
                   )}
                 </div>
               </div>
             ))}
             {isLoading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                <span>正在思考中...</span>
+              <div className="flex items-center gap-3 text-orange-600 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 mr-auto max-w-xs">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
+                <span className="text-sm font-medium">正在思考中...</span>
               </div>
             )}
           </div>
